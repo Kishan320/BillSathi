@@ -13,13 +13,13 @@ class BankTransferRequest extends FormRequest
 
     public function rules(): array
     {
-        $required = $this->isMethod('post') ? 'required' : 'sometimes|required';
+        $required = $this->isMethod('post') ? ['required'] : ['sometimes', 'required'];
 
         return [
-            'from_account_id' => [$required, 'exists:bank_accounts,id'],
-            'to_account_id' => [$required, 'exists:bank_accounts,id', 'different:from_account_id'],
-            'date' => [$required, 'date'],
-            'amount' => [$required, 'numeric', 'min:0.01'],
+            'from_account_id' => [...$required, 'exists:bank_accounts,id'],
+            'to_account_id' => [...$required, 'exists:bank_accounts,id', 'different:from_account_id'],
+            'date' => [...$required, 'date'],
+            'amount' => [...$required, 'numeric', 'min:0.01'],
             'notes' => ['nullable', 'string'],
         ];
     }

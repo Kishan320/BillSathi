@@ -13,10 +13,10 @@ class ContactRequest extends FormRequest
 
     public function rules(): array
     {
-        $nameRule = $this->isMethod('post') ? 'required' : 'sometimes|required';
+        $nameRule = $this->isMethod('post') ? ['required'] : ['sometimes', 'required'];
 
         return [
-            'name' => [$nameRule, 'string', 'max:255'],
+            'name' => [...$nameRule, 'string', 'max:255'],
             'gstin' => ['nullable', 'string', 'max:20'],
             'pan' => ['nullable', 'string', 'max:20'],
             'mobile' => ['nullable', 'string', 'max:20'],

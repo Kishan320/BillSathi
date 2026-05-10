@@ -10,7 +10,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
             // Type & flags
-            $table->enum('item_type', ['product', 'service'])->default('product');
+            $table->enum('item_type', ['product', 'service', 'charge'])->default('product');
             $table->tinyInteger('manage_inventory')->default(1);
             $table->tinyInteger('serialized_product')->default(0);
 

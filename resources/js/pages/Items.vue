@@ -25,6 +25,7 @@
         <option value="">All Types</option>
         <option value="product">Product</option>
         <option value="service">Service</option>
+        <option value="charge">Charge</option>
       </select>
     </div>
 
@@ -102,12 +103,13 @@
           <div class="flex items-start gap-6">
             <div class="w-56">
               <label class="block text-xs text-muted-foreground mb-1">Item Type</label>
-              <select v-model="form.item_type" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
+              <select v-model="form.item_type" @change="handleItemTypeChange" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
                 <option value="product">Product</option>
                 <option value="service">Service</option>
+                <option value="charge">Charge</option>
               </select>
             </div>
-            <div class="flex flex-col gap-2 pt-5">
+            <div v-if="isProduct" class="flex flex-col gap-2 pt-5">
               <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                 <input type="checkbox" v-model="form.manage_inventory" :true-value="1" :false-value="0"
                   class="w-4 h-4 accent-primary" />
@@ -122,32 +124,30 @@
           </div>
 
           <!-- Name -->
-          <div>
+          <div v-if="isProduct">
             <input v-model="form.name" @change="form.validate('name')" type="text" placeholder="Name*"
               :class="['w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors', errors.name ? 'border-danger' : '']" />
             <p v-if="errors.name" class="text-xs text-danger mt-1">{{ errors.name }}</p>
           </div>
 
-          <!-- Short Description -->
-          <div>
-            <input v-model="form.short_description" type="text" placeholder="Short Description"
-              class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" maxlength="255" />
+          <!-- Name + SAC -->
+          <div v-else class="grid grid-cols-2 gap-3">
+            <div>
+              <input v-model="form.name" @change="form.validate('name')" type="text" placeholder="Name*"
+                :class="['w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors', errors.name ? 'border-danger' : '']" />
+              <p v-if="errors.name" class="text-xs text-danger mt-1">{{ errors.name }}</p>
+            </div>
+            <input v-model="form.hsn" type="text" placeholder="SAC" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
           </div>
 
           <!-- HSN + SKU -->
-          <div class="grid grid-cols-2 gap-3">
+          <div v-if="isProduct" class="grid grid-cols-2 gap-3">
             <input v-model="form.hsn" type="text" placeholder="HSN" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
-            <div class="flex gap-2">
-              <input v-model="form.sku" type="text" placeholder="Item Code (SKU)" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors flex-1" />
-              <button @click="generateSku" type="button"
-                class="px-3 py-2 text-xs bg-muted text-foreground rounded-lg border border-border hover:bg-border transition-colors whitespace-nowrap">
-                Generate
-              </button>
-            </div>
+            <input v-model="form.sku" type="text" placeholder="Item Code" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors" />
           </div>
 
           <!-- Unit + Tax Category -->
-          <div class="grid grid-cols-2 gap-3">
+          <div v-if="!isCharge" class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs text-muted-foreground mb-1">Unit of Measurement*</label>
               <select v-model="form.unit" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
@@ -165,15 +165,8 @@
           </div>
 
           <!-- Category + Stock Category -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-muted-foreground mb-1">Category</label>
-              <select v-model="form.category" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
-                <option value="">None</option>
-                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-              </select>
-            </div>
-            <div>
+          <div v-if="isProduct" class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
               <label class="block text-xs text-muted-foreground mb-1">Stock Category</label>
               <select v-model="form.stock_category" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
                 <option value="">None</option>
@@ -183,10 +176,13 @@
           </div>
 
           <!-- Invoice Description -->
-          <div>
-            <textarea v-model="form.invoice_description" placeholder="Default Invoice Description — Shown on invoice e.g. '3 years warranty'"
+          <div v-if="!isCharge">
+            <textarea v-model="form.invoice_description" placeholder="Default Invoice Description"
               class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-none" rows="2" maxlength="4000" />
-            <p class="text-xs text-muted-foreground text-right mt-0.5">{{ (form.invoice_description || '').length }} / 4000</p>
+            <div class="flex items-center justify-between mt-0.5 text-xs text-muted-foreground">
+              <p>Shown on invoice e.g. "3 years warranty"</p>
+              <p>{{ (form.invoice_description || '').length }} / 4000</p>
+            </div>
           </div>
 
           <!-- Sales Price -->
@@ -195,7 +191,7 @@
             <div class="flex gap-3 items-center">
               <div class="flex shrink-0 items-center gap-1 border border-border rounded-lg px-3 py-2 bg-card">
                 <span class="text-muted-foreground text-sm">₹</span>
-                <input v-model="form.sale_price" type="number" min="0" step="0.01" placeholder="0.00"
+                <input v-model="form.sale_price" @input="handleSalePriceInput" type="number" min="0" step="0.01" placeholder="0.00"
                   class="w-24 text-sm bg-transparent outline-none text-foreground" />
               </div>
               <select v-model="form.sale_price_type" class="w-36 shrink-0 px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
@@ -213,22 +209,12 @@
             </div>
             <p v-if="errors.sale_discount" class="text-xs text-danger mt-1">{{ errors.sale_discount }}</p>
             <p class="text-xs text-muted-foreground mt-1">
-              {{ form.sale_discount_type === 'percent' ? form.sale_discount + '%' : '₹' + form.sale_discount }}
+              {{ discountLabel }}
             </p>
           </div>
 
-          <!-- Purchase Price -->
-          <div>
-            <label class="block text-xs text-muted-foreground mb-1">Purchase Price</label>
-            <div class="flex items-center gap-1 border border-border rounded-lg px-3 py-2 bg-card w-40">
-              <span class="text-muted-foreground text-sm">₹</span>
-              <input v-model="form.purchase_price" type="number" min="0" step="0.01" placeholder="0.00"
-                class="w-full text-sm bg-transparent outline-none text-foreground" />
-            </div>
-          </div>
-
           <!-- Opening Stock (only for products with inventory) -->
-          <div v-if="form.item_type === 'product' && form.manage_inventory">
+          <div v-if="isProduct && form.manage_inventory">
             <p class="text-sm font-semibold text-foreground mb-2">Opening Stock</p>
             <div class="flex gap-3">
               <div class="flex items-center gap-2 border border-border rounded-lg px-3 py-2 bg-card">
@@ -291,7 +277,6 @@ const loading = computed(() => resourcesStore.isItemsLoading(itemQuery.value));
 
 const units = computed(() => resourcesStore.setupOptions.units);
 const taxCategories = computed(() => resourcesStore.setupOptions.taxCategories);
-const categories = computed(() => resourcesStore.setupOptions.categories);
 const stockCategories = computed(() => resourcesStore.setupOptions.stockCategories);
 
 const fetchSetupOptions = () => resourcesStore.fetchSystemSettings();
@@ -328,6 +313,9 @@ const form = useForm(
 form.setValidationTimeout(300);
 
 const errors = computed(() => form.errors);
+const isProduct = computed(() => form.item_type === 'product');
+const isService = computed(() => form.item_type === 'service');
+const isCharge = computed(() => form.item_type === 'charge');
 
 const serialCount = computed(() => {
   if (!form.serial_numbers) return 0;
@@ -336,14 +324,47 @@ const serialCount = computed(() => {
 
 const formatNum = (n) => Number(n || 0).toFixed(2);
 
+const saleDiscount = computed(() => Math.max(Number(form.sale_discount || 0), 0));
+const discountLabel = computed(() => (
+  form.sale_discount_type === 'percent'
+    ? `${formatNum(saleDiscount.value)}%`
+    : `₹${formatNum(saleDiscount.value)}`
+));
+
 const fetchItems = async () => {
   await resourcesStore.fetchItems(itemQuery.value);
 };
 
-const generateSku = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  form.sku = 'SKU-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  form.validate('sku');
+const applyItemTypeDefaults = () => {
+  if (isProduct.value) {
+    form.unit ||= 'Pcs';
+    return;
+  }
+
+  form.manage_inventory = 0;
+  form.serialized_product = 0;
+  form.sku = '';
+  form.stock_category = '';
+  form.category = '';
+  form.short_description = '';
+  form.purchase_price = 0;
+  form.opening_stock_qty = 0;
+  form.opening_stock_cost = 0;
+  form.serial_numbers = '';
+
+  if (isService.value) {
+    form.unit ||= 'Pcs';
+    return;
+  }
+
+  form.unit = 'Pcs';
+  form.tax_category = '';
+  form.invoice_description = '';
+};
+
+const handleItemTypeChange = () => {
+  applyItemTypeDefaults();
+  form.validate('item_type');
 };
 
 const normalizeSaleDiscount = () => {
@@ -352,6 +373,12 @@ const normalizeSaleDiscount = () => {
   if (form.sale_discount_type === 'percent' && discount > 100) {
     form.sale_discount = 100;
   }
+};
+
+const handleSalePriceInput = () => {
+  if (Number(form.sale_price || 0) < 0) form.sale_price = 0;
+  form.validate('sale_price');
+  form.validate('sale_discount');
 };
 
 const handleSaleDiscountInput = () => {
@@ -375,6 +402,7 @@ const openModal = (item = null) => {
     form.reset();
     form.setData(defaultForm());
   }
+  applyItemTypeDefaults();
   form.setErrors({});
   showModal.value = true;
 };
@@ -382,6 +410,7 @@ const openModal = (item = null) => {
 const closeModal = () => { showModal.value = false; };
 
 const saveItem = async () => {
+  applyItemTypeDefaults();
   normalizeSaleDiscount();
   saving.value = true;
   try {

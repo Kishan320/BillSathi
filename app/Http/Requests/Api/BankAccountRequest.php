@@ -13,10 +13,10 @@ class BankAccountRequest extends FormRequest
 
     public function rules(): array
     {
-        $nameRule = $this->isMethod('post') ? 'required' : 'sometimes|required';
+        $nameRule = $this->isMethod('post') ? ['required'] : ['sometimes', 'required'];
 
         return [
-            'name' => [$nameRule, 'string', 'max:255'],
+            'name' => [...$nameRule, 'string', 'max:255'],
             'type' => ['in:bank,cash,credit_card,other'],
             'account_number' => ['nullable', 'string', 'max:50'],
             'opening_balance' => [$this->isMethod('post') ? 'nullable' : 'sometimes', 'numeric'],
