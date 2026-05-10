@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\LoanRequest;
 use App\Models\Loan;
 use Illuminate\Http\Request;
 
@@ -15,19 +16,9 @@ class LoanController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(LoanRequest $request)
     {
-        $data = $request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'type'            => 'in:given,taken',
-            'amount'          => 'required|numeric|min:0',
-            'interest_rate'   => 'nullable|numeric|min:0',
-            'date'            => 'required|date',
-            'due_date'        => 'nullable|date',
-            'status'          => 'in:active,closed,overdue',
-            'notes'           => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(Loan::create($data), 201);
     }
@@ -38,20 +29,10 @@ class LoanController extends Controller
         return response()->json($loan->load(['contact', 'bankAccount']));
     }
 
-    public function update(Request $request, Loan $loan)
+    public function update(LoanRequest $request, Loan $loan)
     {
         abort_if($loan->user_id !== $request->user()->id, 403);
-        $loan->update($request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'type'            => 'in:given,taken',
-            'amount'          => 'sometimes|required|numeric|min:0',
-            'interest_rate'   => 'nullable|numeric|min:0',
-            'date'            => 'sometimes|required|date',
-            'due_date'        => 'nullable|date',
-            'status'          => 'in:active,closed,overdue',
-            'notes'           => 'nullable|string',
-        ]));
+        $loan->update($request->validated());
         return response()->json($loan);
     }
 

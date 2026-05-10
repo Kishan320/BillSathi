@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { client as precognitionClient } from 'laravel-precognition-vue';
+import { axiosAdapter } from 'laravel-precognition/axios';
 import { useAuthStore } from '@/stores/auth';
 import { useApiCacheStore } from '@/stores/apiCache';
 import { useNotificationsStore } from '@/stores/notifications';
@@ -15,6 +17,11 @@ export const api = axios.create({
     'Accept': 'application/json',
   },
 });
+
+precognitionClient
+  .useHttpClient(axiosAdapter(api))
+  .withBaseURL(API_BASE_URL)
+  .withTimeout(10000);
 
 // Request interceptor
 api.interceptors.request.use(
@@ -96,6 +103,10 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
+    if (originalRequest.headers?.Precognition) {
+      return Promise.reject(error);
+    }
+
     // Handle 422 Validation Error
     if (status === 422) {
       const validationErrors = data.errors || {};

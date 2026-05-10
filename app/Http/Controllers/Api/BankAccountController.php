@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\BankAccountRequest;
 use App\Models\BankAccount;
 use Illuminate\Http\Request;
 
@@ -12,14 +13,9 @@ class BankAccountController extends Controller
         return response()->json(BankAccount::where('user_id', $request->user()->id)->get());
     }
 
-    public function store(Request $request)
+    public function store(BankAccountRequest $request)
     {
-        $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'type'            => 'in:bank,cash,credit_card,other',
-            'account_number'  => 'nullable|string|max:50',
-            'opening_balance' => 'nullable|numeric',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         $data['current_balance'] = $data['opening_balance'] ?? 0;
         return response()->json(BankAccount::create($data), 201);
@@ -31,14 +27,10 @@ class BankAccountController extends Controller
         return response()->json($bankAccount);
     }
 
-    public function update(Request $request, BankAccount $bankAccount)
+    public function update(BankAccountRequest $request, BankAccount $bankAccount)
     {
         abort_if($bankAccount->user_id !== $request->user()->id, 403);
-        $data = $request->validate([
-            'name'           => 'sometimes|required|string|max:255',
-            'type'           => 'in:bank,cash,credit_card,other',
-            'account_number' => 'nullable|string|max:50',
-        ]);
+        $data = $request->safe()->except('opening_balance');
         $bankAccount->update($data);
         return response()->json($bankAccount);
     }

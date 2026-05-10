@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\SystemSettingRequest;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 
@@ -36,12 +37,9 @@ class SystemSettingController extends Controller
         return response()->json($data);
     }
 
-    public function store(Request $request)
+    public function store(SystemSettingRequest $request)
     {
-        $data = $request->validate([
-            'type'  => 'required|in:units,tax_categories,categories,stock_categories',
-            'value' => 'required|string|max:100',
-        ]);
+        $data = $request->validated();
 
         $data['user_id']    = $request->user()->id;
         $data['sort_order'] = SystemSetting::where('user_id', $data['user_id'])->where('type', $data['type'])->max('sort_order') + 1;
@@ -49,10 +47,10 @@ class SystemSettingController extends Controller
         return response()->json(SystemSetting::create($data), 201);
     }
 
-    public function update(Request $request, SystemSetting $systemSetting)
+    public function update(SystemSettingRequest $request, SystemSetting $systemSetting)
     {
         abort_if($systemSetting->user_id !== $request->user()->id, 403);
-        $systemSetting->update($request->validate(['value' => 'required|string|max:100']));
+        $systemSetting->update($request->safe()->only('value'));
         return response()->json($systemSetting);
     }
 

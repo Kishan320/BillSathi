@@ -26,6 +26,7 @@
               <input
                 id="email"
                 v-model="form.email"
+                @change="form.validate('email')"
                 type="email"
                 required
                 :class="[
@@ -33,7 +34,7 @@
                   form.errors.email ? 'border-danger' : ''
                 ]"
                 placeholder="Enter your email"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
             </div>
             <p v-if="form.errors.email" class="mt-1 text-xs text-danger">
@@ -54,6 +55,7 @@
               <input
                 id="password"
                 v-model="form.password"
+                @change="form.validate('password')"
                 :type="showPassword ? 'text' : 'password'"
                 required
                 :class="[
@@ -61,7 +63,7 @@
                   form.errors.password ? 'border-danger' : ''
                 ]"
                 placeholder="Enter your password"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
               <button
                 type="button"
@@ -106,10 +108,10 @@
 
         <button
           type="submit"
-          :disabled="form.isSubmitting"
+          :disabled="isSubmitting"
           class="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <span v-if="form.isSubmitting" class="flex items-center justify-center gap-2">
+          <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
             <div class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
             Signing in...
           </span>
@@ -143,7 +145,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useForm } from '@/composables/useForm';
+import { useForm } from 'laravel-precognition-vue';
 import { useAuth } from '@/composables/useAuth';
 import AppLogo from '@/components/ui/AppLogo.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
@@ -152,36 +154,29 @@ const router = useRouter();
 const { login } = useAuth();
 
 const showPassword = ref(false);
+const isSubmitting = ref(false);
 
-const validationRules = {
-  email: {
-    required: 'Email is required',
-    email: 'Please enter a valid email address'
-  },
-  password: {
-    required: 'Password is required',
-    min: 6,
-    minMessage: 'Password must be at least 6 characters'
-  }
-};
+const form = useForm('post', '/auth/login', {
+  email: 'admin@hisaab.com',
+  password: 'password',
+  remember: false,
+});
 
-const form = useForm(
-  {
-    email: 'admin@hisaab.com',
-    password: 'password',
-    remember: false
-  },
-  validationRules
-);
+form.setValidationTimeout(300);
 
 const handleLogin = async () => {
-  await form.submit(async (formData) => {
+  isSubmitting.value = true;
+  try {
     await login({
-      email: formData.email,
-      password: formData.password,
-      remember: formData.remember
+      email: form.email,
+      password: form.password,
+      remember: form.remember,
     });
-  });
+  } catch (error) {
+    if (error.response?.data?.errors) form.setErrors(error.response.data.errors);
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
 const goToRegister = () => {

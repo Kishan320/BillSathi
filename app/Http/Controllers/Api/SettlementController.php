@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\SettlementRequest;
 use App\Models\Settlement;
 use Illuminate\Http\Request;
 
@@ -15,15 +16,9 @@ class SettlementController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(SettlementRequest $request)
     {
-        $data = $request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'date'            => 'required|date',
-            'amount'          => 'required|numeric|min:0',
-            'notes'           => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(Settlement::create($data), 201);
     }
@@ -34,16 +29,10 @@ class SettlementController extends Controller
         return response()->json($settlement->load(['contact', 'bankAccount']));
     }
 
-    public function update(Request $request, Settlement $settlement)
+    public function update(SettlementRequest $request, Settlement $settlement)
     {
         abort_if($settlement->user_id !== $request->user()->id, 403);
-        $settlement->update($request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'date'            => 'sometimes|required|date',
-            'amount'          => 'sometimes|required|numeric|min:0',
-            'notes'           => 'nullable|string',
-        ]));
+        $settlement->update($request->validated());
         return response()->json($settlement);
     }
 

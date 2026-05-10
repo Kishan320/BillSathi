@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "@vitejs/plugin-vue": "^6.0.6",
+        "laravel-precognition-vue": "^2.0.0",
         "lucide-vue-next": "^1.0.0",
         "pinia": "^2.3.1",
         "vue": "^3.5.34",

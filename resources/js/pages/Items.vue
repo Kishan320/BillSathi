@@ -61,9 +61,27 @@
             <td class="px-4 py-3 text-muted-foreground">{{ item.unit }}</td>
             <td class="px-4 py-3 text-right font-medium">₹{{ formatNum(item.sale_price) }}</td>
             <td class="px-4 py-3 text-right text-muted-foreground">{{ item.opening_stock_qty }}</td>
-            <td class="px-4 py-3 text-right">
-              <button @click="openModal(item)" class="text-primary hover:underline text-xs mr-3">Edit</button>
-              <button @click="deleteItem(item)" class="text-danger hover:underline text-xs">Delete</button>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  @click="openModal(item)"
+                  type="button"
+                  title="Edit"
+                  aria-label="Edit item"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary hover:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <AppIcon name="edit" :size="15" />
+                </button>
+                <button
+                  @click="deleteItem(item)"
+                  type="button"
+                  title="Delete"
+                  aria-label="Delete item"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-danger/10 text-danger transition-colors hover:bg-danger hover:text-white focus:outline-none focus:ring-2 focus:ring-danger/30"
+                >
+                  <AppIcon name="trash-2" :size="15" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -105,7 +123,7 @@
 
           <!-- Name -->
           <div>
-            <input v-model="form.name" type="text" placeholder="Name*"
+            <input v-model="form.name" @change="form.validate('name')" type="text" placeholder="Name*"
               :class="['w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors', errors.name ? 'border-danger' : '']" />
             <p v-if="errors.name" class="text-xs text-danger mt-1">{{ errors.name }}</p>
           </div>
@@ -175,24 +193,25 @@
           <div>
             <p class="text-sm font-semibold text-foreground mb-2">Sales Price</p>
             <div class="flex gap-3 items-center">
-              <div class="flex items-center gap-1 border border-border rounded-lg px-3 py-2 bg-card">
+              <div class="flex shrink-0 items-center gap-1 border border-border rounded-lg px-3 py-2 bg-card">
                 <span class="text-muted-foreground text-sm">₹</span>
                 <input v-model="form.sale_price" type="number" min="0" step="0.01" placeholder="0.00"
                   class="w-24 text-sm bg-transparent outline-none text-foreground" />
               </div>
-              <select v-model="form.sale_price_type" class="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors w-36">
+              <select v-model="form.sale_price_type" class="w-36 shrink-0 px-3 py-2 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors">
                 <option value="with_tax">With tax</option>
                 <option value="without_tax">Without tax</option>
               </select>
-              <div class="flex items-center gap-1 border border-border rounded-lg px-3 py-2 bg-card flex-1">
-                <input v-model="form.sale_discount" type="number" min="0" step="0.01" placeholder="Discount"
-                  class="w-full text-sm bg-transparent outline-none text-foreground" />
-                <button @click="form.sale_discount_type = form.sale_discount_type === 'percent' ? 'amount' : 'percent'"
-                  class="text-xs font-medium text-primary border border-primary rounded px-1.5 py-0.5 ml-1">
+              <div class="flex min-w-48 flex-1 items-center gap-2 border border-border rounded-lg px-3 py-2 bg-card">
+                <input v-model="form.sale_discount" @input="handleSaleDiscountInput" type="number" min="0" :max="form.sale_discount_type === 'percent' ? 100 : null" step="0.01" placeholder="Discount"
+                  class="min-w-0 flex-1 text-sm bg-transparent outline-none text-foreground" />
+                <button type="button" @click="toggleSaleDiscountType"
+                  class="shrink-0 text-xs font-medium text-primary border border-primary rounded px-2 py-0.5">
                   {{ form.sale_discount_type === 'percent' ? '%' : '₹' }}
                 </button>
               </div>
             </div>
+            <p v-if="errors.sale_discount" class="text-xs text-danger mt-1">{{ errors.sale_discount }}</p>
             <p class="text-xs text-muted-foreground mt-1">
               {{ form.sale_discount_type === 'percent' ? form.sale_discount + '%' : '₹' + form.sale_discount }}
             </p>
@@ -251,9 +270,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useForm } from 'laravel-precognition-vue';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useResourcesStore } from '@/stores/resources';
+import AppIcon from '@/components/ui/AppIcon.vue';
 
 const notify = useNotificationsStore();
 const resourcesStore = useResourcesStore();
@@ -263,7 +284,6 @@ const showModal = ref(false);
 const editId    = ref(null);
 const search    = ref('');
 const filterType = ref('');
-const errors    = ref({});
 
 const itemQuery = computed(() => ({ search: search.value, item_type: filterType.value }));
 const items = computed(() => resourcesStore.getItems(itemQuery.value));
@@ -299,11 +319,19 @@ const defaultForm = () => ({
   serial_numbers: '',
 });
 
-const form = ref(defaultForm());
+const form = useForm(
+  () => (editId.value ? 'put' : 'post'),
+  () => (editId.value ? `/items/${editId.value}` : '/items'),
+  defaultForm()
+);
+
+form.setValidationTimeout(300);
+
+const errors = computed(() => form.errors);
 
 const serialCount = computed(() => {
-  if (!form.value.serial_numbers) return 0;
-  return form.value.serial_numbers.split('\n').filter(s => s.trim()).length;
+  if (!form.serial_numbers) return 0;
+  return form.serial_numbers.split('\n').filter(s => s.trim()).length;
 });
 
 const formatNum = (n) => Number(n || 0).toFixed(2);
@@ -314,39 +342,61 @@ const fetchItems = async () => {
 
 const generateSku = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  form.value.sku = 'SKU-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  form.sku = 'SKU-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  form.validate('sku');
+};
+
+const normalizeSaleDiscount = () => {
+  const discount = Number(form.sale_discount || 0);
+  if (discount < 0) form.sale_discount = 0;
+  if (form.sale_discount_type === 'percent' && discount > 100) {
+    form.sale_discount = 100;
+  }
+};
+
+const handleSaleDiscountInput = () => {
+  normalizeSaleDiscount();
+  form.validate('sale_discount');
+};
+
+const toggleSaleDiscountType = () => {
+  form.sale_discount_type = form.sale_discount_type === 'percent' ? 'amount' : 'percent';
+  normalizeSaleDiscount();
+  form.validate('sale_discount');
 };
 
 const openModal = (item = null) => {
-  errors.value = {};
   if (item) {
     editId.value = item.id;
-    form.value = { ...defaultForm(), ...item };
+    form.reset();
+    form.setData({ ...defaultForm(), ...item });
   } else {
     editId.value = null;
-    form.value = defaultForm();
+    form.reset();
+    form.setData(defaultForm());
   }
+  form.setErrors({});
   showModal.value = true;
 };
 
 const closeModal = () => { showModal.value = false; };
 
 const saveItem = async () => {
-  errors.value = {};
-  if (!form.value.name) { errors.value.name = 'Name is required'; return; }
+  normalizeSaleDiscount();
   saving.value = true;
   try {
+    await form.submit();
+
     if (editId.value) {
-      await resourcesStore.updateItem(editId.value, form.value);
-      notify.showSuccess('Item Updated', `"${form.value.name}" has been updated successfully.`);
+      notify.showSuccess('Item Updated', `"${form.name}" has been updated successfully.`);
     } else {
-      await resourcesStore.createItem(form.value);
-      notify.showSuccess('Item Created', `"${form.value.name}" has been created successfully.`);
+      notify.showSuccess('Item Created', `"${form.name}" has been created successfully.`);
     }
+
+    await resourcesStore.fetchItems(itemQuery.value, { force: true });
     closeModal();
   } catch (e) {
-    if (e.response?.data?.errors) errors.value = e.response.data.errors;
-    else notify.showError('Save Failed', e.response?.data?.message || 'Something went wrong.');
+    if (!e.response?.data?.errors) notify.showError('Save Failed', e.response?.data?.message || 'Something went wrong.');
   } finally {
     saving.value = false;
   }

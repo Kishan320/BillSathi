@@ -76,7 +76,11 @@ const remove = (id) => {
   border-left: 4px solid transparent;
 }
 
-.snackbar.success { border-color: #22c55e; }
+.snackbar.success {
+  background: var(--positive-bg);
+  color: var(--positive);
+  border-color: var(--positive);
+}
 .snackbar.error   { border-color: #ef4444; }
 .snackbar.warning { border-color: #f59e0b; }
 .snackbar.info    { border-color: #3b82f6; }
@@ -89,7 +93,7 @@ const remove = (id) => {
 }
 .snackbar-icon svg { width: 20px; height: 20px; }
 
-.snackbar.success .snackbar-icon { color: #22c55e; }
+.snackbar.success .snackbar-icon { color: var(--positive); }
 .snackbar.error   .snackbar-icon { color: #ef4444; }
 .snackbar.warning .snackbar-icon { color: #f59e0b; }
 .snackbar.info    .snackbar-icon { color: #3b82f6; }
@@ -113,6 +117,10 @@ const remove = (id) => {
   line-height: 1.4;
 }
 
+.snackbar.success .snackbar-desc {
+  color: #047857;
+}
+
 .snackbar-close {
   flex-shrink: 0;
   background: none;
@@ -127,6 +135,8 @@ const remove = (id) => {
   justify-content: center;
 }
 .snackbar-close:hover { color: #e2e8f0; }
+.snackbar.success .snackbar-close { color: #059669; }
+.snackbar.success .snackbar-close:hover { color: #064e3b; }
 .snackbar-close svg { width: 14px; height: 14px; }
 
 .snackbar-enter-active,

@@ -17,15 +17,18 @@ use App\Http\Controllers\Api\SettlementController;
 use App\Http\Controllers\Api\JournalVoucherController;
 use App\Http\Controllers\Api\CustomAccountController;
 use App\Http\Controllers\Api\SystemSettingController;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 
 // Public auth routes
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+Route::middleware([HandlePrecognitiveRequests::class])->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+});
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', HandlePrecognitiveRequests::class])->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);

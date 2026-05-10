@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\CustomAccountRequest;
 use App\Models\CustomAccount;
 use Illuminate\Http\Request;
 
@@ -12,14 +13,9 @@ class CustomAccountController extends Controller
         return response()->json(CustomAccount::where('user_id', $request->user()->id)->get());
     }
 
-    public function store(Request $request)
+    public function store(CustomAccountRequest $request)
     {
-        $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'type'            => 'in:asset,liability,equity,income,expense',
-            'opening_balance' => 'nullable|numeric',
-            'description'     => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(CustomAccount::create($data), 201);
     }
@@ -30,15 +26,10 @@ class CustomAccountController extends Controller
         return response()->json($customAccount);
     }
 
-    public function update(Request $request, CustomAccount $customAccount)
+    public function update(CustomAccountRequest $request, CustomAccount $customAccount)
     {
         abort_if($customAccount->user_id !== $request->user()->id, 403);
-        $customAccount->update($request->validate([
-            'name'            => 'sometimes|required|string|max:255',
-            'type'            => 'in:asset,liability,equity,income,expense',
-            'opening_balance' => 'nullable|numeric',
-            'description'     => 'nullable|string',
-        ]));
+        $customAccount->update($request->validated());
         return response()->json($customAccount);
     }
 

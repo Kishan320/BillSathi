@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\JournalVoucherRequest;
 use App\Models\JournalVoucher;
 use Illuminate\Http\Request;
 
@@ -14,15 +15,9 @@ class JournalVoucherController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(JournalVoucherRequest $request)
     {
-        $data = $request->validate([
-            'voucher_number' => 'nullable|string|max:100',
-            'date'           => 'required|date',
-            'description'    => 'nullable|string',
-            'debit'          => 'required|numeric|min:0',
-            'credit'         => 'required|numeric|min:0',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(JournalVoucher::create($data), 201);
     }
@@ -33,16 +28,10 @@ class JournalVoucherController extends Controller
         return response()->json($journalVoucher);
     }
 
-    public function update(Request $request, JournalVoucher $journalVoucher)
+    public function update(JournalVoucherRequest $request, JournalVoucher $journalVoucher)
     {
         abort_if($journalVoucher->user_id !== $request->user()->id, 403);
-        $journalVoucher->update($request->validate([
-            'voucher_number' => 'nullable|string|max:100',
-            'date'           => 'sometimes|required|date',
-            'description'    => 'nullable|string',
-            'debit'          => 'sometimes|required|numeric|min:0',
-            'credit'         => 'sometimes|required|numeric|min:0',
-        ]));
+        $journalVoucher->update($request->validated());
         return response()->json($journalVoucher);
     }
 

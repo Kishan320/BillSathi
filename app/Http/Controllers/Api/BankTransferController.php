@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\BankTransferRequest;
 use App\Models\BankTransfer;
 use Illuminate\Http\Request;
 
@@ -16,15 +17,9 @@ class BankTransferController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(BankTransferRequest $request)
     {
-        $data = $request->validate([
-            'from_account_id' => 'required|exists:bank_accounts,id',
-            'to_account_id'   => 'required|exists:bank_accounts,id|different:from_account_id',
-            'date'            => 'required|date',
-            'amount'          => 'required|numeric|min:0.01',
-            'notes'           => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(BankTransfer::create($data), 201);
     }
@@ -35,16 +30,10 @@ class BankTransferController extends Controller
         return response()->json($bankTransfer->load(['fromAccount', 'toAccount']));
     }
 
-    public function update(Request $request, BankTransfer $bankTransfer)
+    public function update(BankTransferRequest $request, BankTransfer $bankTransfer)
     {
         abort_if($bankTransfer->user_id !== $request->user()->id, 403);
-        $data = $request->validate([
-            'from_account_id' => 'sometimes|required|exists:bank_accounts,id',
-            'to_account_id'   => 'sometimes|required|exists:bank_accounts,id',
-            'date'            => 'sometimes|required|date',
-            'amount'          => 'sometimes|required|numeric|min:0.01',
-            'notes'           => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $bankTransfer->update($data);
         return response()->json($bankTransfer);
     }

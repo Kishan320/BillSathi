@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\IncomeRequest;
 use App\Models\Income;
 use Illuminate\Http\Request;
 
@@ -15,18 +16,9 @@ class IncomeController extends Controller
         return response()->json($query->orderByDesc('date')->paginate(20));
     }
 
-    public function store(Request $request)
+    public function store(IncomeRequest $request)
     {
-        $data = $request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'reference'       => 'nullable|string|max:100',
-            'date'            => 'required|date',
-            'amount'          => 'required|numeric|min:0',
-            'category'        => 'nullable|string|max:100',
-            'notes'           => 'nullable|string',
-            'status'          => 'in:received,pending,overdue',
-        ]);
+        $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         return response()->json(Income::create($data), 201);
     }
@@ -37,19 +29,10 @@ class IncomeController extends Controller
         return response()->json($income->load(['contact', 'bankAccount']));
     }
 
-    public function update(Request $request, Income $income)
+    public function update(IncomeRequest $request, Income $income)
     {
         abort_if($income->user_id !== $request->user()->id, 403);
-        $data = $request->validate([
-            'contact_id'      => 'nullable|exists:contacts,id',
-            'bank_account_id' => 'nullable|exists:bank_accounts,id',
-            'reference'       => 'nullable|string|max:100',
-            'date'            => 'sometimes|required|date',
-            'amount'          => 'sometimes|required|numeric|min:0',
-            'category'        => 'nullable|string|max:100',
-            'notes'           => 'nullable|string',
-            'status'          => 'in:received,pending,overdue',
-        ]);
+        $data = $request->validated();
         $income->update($data);
         return response()->json($income);
     }

@@ -26,6 +26,7 @@
               <input
                 id="name"
                 v-model="form.name"
+                @change="form.validate('name')"
                 type="text"
                 required
                 :class="[
@@ -33,7 +34,7 @@
                   form.errors.name ? 'border-danger' : ''
                 ]"
                 placeholder="Enter your full name"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
             </div>
             <p v-if="form.errors.name" class="mt-1 text-xs text-danger">
@@ -54,6 +55,7 @@
               <input
                 id="email"
                 v-model="form.email"
+                @change="form.validate('email')"
                 type="email"
                 required
                 :class="[
@@ -61,7 +63,7 @@
                   form.errors.email ? 'border-danger' : ''
                 ]"
                 placeholder="Enter your email"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
             </div>
             <p v-if="form.errors.email" class="mt-1 text-xs text-danger">
@@ -82,6 +84,7 @@
               <input
                 id="password"
                 v-model="form.password"
+                @change="form.validate('password')"
                 :type="showPassword ? 'text' : 'password'"
                 required
                 :class="[
@@ -89,7 +92,7 @@
                   form.errors.password ? 'border-danger' : ''
                 ]"
                 placeholder="Create a password"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
               <button
                 type="button"
@@ -117,6 +120,7 @@
               <input
                 id="password_confirmation"
                 v-model="form.password_confirmation"
+                @change="form.validate('password_confirmation')"
                 :type="showConfirmPassword ? 'text' : 'password'"
                 required
                 :class="[
@@ -124,7 +128,7 @@
                   form.errors.password_confirmation ? 'border-danger' : ''
                 ]"
                 placeholder="Confirm your password"
-                :disabled="form.isSubmitting"
+                :disabled="isSubmitting"
               />
               <button
                 type="button"
@@ -173,10 +177,10 @@
         <!-- Submit button -->
         <button
           type="submit"
-          :disabled="form.isSubmitting || !form.isValid"
+          :disabled="isSubmitting || !form.terms"
           class="w-full py-2.5 px-4 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <span v-if="form.isSubmitting" class="flex items-center justify-center gap-2">
+          <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
             <div class="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
             Creating account...
           </span>
@@ -203,7 +207,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useForm } from '@/composables/useForm';
+import { useForm } from 'laravel-precognition-vue';
 import { useAuth } from '@/composables/useAuth';
 import AppLogo from '@/components/ui/AppLogo.vue';
 import AppIcon from '@/components/ui/AppIcon.vue';
@@ -213,64 +217,32 @@ const { register } = useAuth();
 
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+const isSubmitting = ref(false);
 
-const validationRules = {
-  name: {
-    required: 'Full name is required',
-    min: 2,
-    minMessage: 'Name must be at least 2 characters'
-  },
-  email: {
-    required: 'Email is required',
-    email: 'Please enter a valid email address'
-  },
-  password: {
-    required: 'Password is required',
-    min: 8,
-    minMessage: 'Password must be at least 8 characters'
-  },
-  password_confirmation: {
-    required: 'Please confirm your password',
-    custom: (value, form) => {
-      if (value !== form.password) {
-        return 'Passwords do not match';
-      }
-      return null;
-    }
-  },
-  terms: {
-    required: 'You must agree to the terms and conditions',
-    custom: (value) => {
-      if (!value) {
-        return 'You must agree to the terms and conditions';
-      }
-      return null;
-    }
-  }
-};
+const form = useForm('post', '/auth/register', {
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+  terms: false,
+});
 
-const form = useForm(
-  {
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-    terms: false
-  },
-  validationRules
-);
+form.setValidationTimeout(300);
 
 const handleRegister = async () => {
+  isSubmitting.value = true;
   try {
     await register({
-      name: form.form.name,
-      email: form.form.email,
-      password: form.form.password,
-      password_confirmation: form.form.password_confirmation
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      password_confirmation: form.password_confirmation,
     });
   } catch (error) {
-    // Error is handled by auth composable
+    if (error.response?.data?.errors) form.setErrors(error.response.data.errors);
     console.error('Registration failed:', error);
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
