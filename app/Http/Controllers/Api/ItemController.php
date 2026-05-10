@@ -55,4 +55,43 @@ class ItemController extends Controller
     {
         return response()->json(['sku' => strtoupper(Str::random(8))]);
     }
+
+    public function import(Request $request)
+    {
+        $request->validate(['items' => 'required|array|min:1']);
+
+        $userId = $request->user()->id;
+        $created = 0;
+
+        foreach ($request->items as $row) {
+            if (empty($row['name'])) continue;
+
+            $data = [
+                'user_id'            => $userId,
+                'item_type'          => $row['item_type'] ?? 'product',
+                'name'               => $row['name'],
+                'hsn'                => $row['hsn'] ?? null,
+                'sku'                => !empty($row['sku']) ? $row['sku'] : strtoupper(Str::random(8)),
+                'category'           => $row['category'] ?? null,
+                'unit'               => $row['unit'] ?? 'Pcs',
+                'tax_category'       => $row['tax_category'] ?? null,
+                'stock_category'     => $row['stock_category'] ?? null,
+                'short_description'  => $row['short_description'] ?? null,
+                'invoice_description'=> $row['invoice_description'] ?? null,
+                'sale_price'         => $row['sale_price'] ?? 0,
+                'sale_price_type'    => $row['sale_price_type'] ?? 'with_tax',
+                'sale_discount'      => $row['sale_discount'] ?? 0,
+                'sale_discount_type' => $row['sale_discount_type'] ?? 'percent',
+                'purchase_price'     => $row['purchase_price'] ?? 0,
+                'manage_inventory'   => $row['manage_inventory'] ?? 1,
+                'opening_stock_qty'  => $row['opening_stock_qty'] ?? 0,
+                'opening_stock_cost' => $row['opening_stock_cost'] ?? 0,
+            ];
+
+            Item::create($data);
+            $created++;
+        }
+
+        return response()->json(['imported' => $created]);
+    }
 }

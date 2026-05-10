@@ -48,6 +48,7 @@ Route::middleware(['auth:sanctum', HandlePrecognitiveRequests::class])->group(fu
     Route::apiResource('bank-transfers', BankTransferController::class);
     Route::apiResource('loans', LoanController::class);
     Route::get('/items/generate-sku', [ItemController::class, 'generateSku']);
+    Route::post('/items/import', [ItemController::class, 'import']);
     Route::apiResource('items', ItemController::class);
     Route::apiResource('purchases', PurchaseController::class);
     Route::apiResource('sales', SaleController::class);

@@ -10,6 +10,13 @@
         <router-link to="/system-setup" class="flex items-center gap-2 px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground hover:bg-muted transition-colors">
           ⚙ System Setup
         </router-link>
+        <button @click="exportItems" class="flex items-center gap-2 px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground hover:bg-muted transition-colors">
+          <AppIcon name="download" :size="15" /> Export
+        </button>
+        <button @click="$refs.importInput.click()" class="flex items-center gap-2 px-4 py-2 border border-border text-sm font-medium rounded-lg text-foreground hover:bg-muted transition-colors">
+          <AppIcon name="upload" :size="15" /> Import
+        </button>
+        <input ref="importInput" type="file" accept=".xlsx,.xls" class="hidden" @change="handleImport" />
         <button @click="openModal()" class="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">
           + New Item
         </button>
@@ -258,8 +265,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useForm } from 'laravel-precognition-vue';
+import * as XLSX from 'xlsx';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useResourcesStore } from '@/stores/resources';
+import { api } from '@/services/api';
 import AppIcon from '@/components/ui/AppIcon.vue';
 
 const notify = useNotificationsStore();
@@ -438,6 +447,49 @@ const deleteItem = async (item) => {
     notify.showSuccess('Item Deleted', `"${item.name}" has been deleted.`);
   } catch {
     notify.showError('Delete Failed', 'Could not delete the item.');
+  }
+};
+
+const IMPORT_COLUMNS = [
+  'name', 'item_type', 'hsn', 'sku', 'category', 'unit',
+  'tax_category', 'stock_category', 'short_description', 'invoice_description',
+  'sale_price', 'sale_price_type', 'sale_discount', 'sale_discount_type',
+  'purchase_price', 'manage_inventory', 'opening_stock_qty', 'opening_stock_cost',
+];
+
+const exportItems = () => {
+  const rows = items.value.map(item =>
+    IMPORT_COLUMNS.reduce((acc, col) => { acc[col] = item[col] ?? ''; return acc; }, {})
+  );
+  if (!rows.length) {
+    rows.push(IMPORT_COLUMNS.reduce((acc, col) => { acc[col] = ''; return acc; }, {}));
+  }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Items');
+  XLSX.writeFile(wb, 'items.xlsx');
+};
+
+const handleImport = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data);
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+
+  if (!rows.length) {
+    notify.showError('Import Failed', 'No data found in the file.');
+    return;
+  }
+
+  try {
+    const res = await api.post('/items/import', { items: rows });
+    notify.showSuccess('Import Successful', `${res.data.imported} item(s) imported.`);
+    await resourcesStore.fetchItems(itemQuery.value, { force: true });
+  } catch (err) {
+    notify.showError('Import Failed', err.response?.data?.message || 'Something went wrong.');
   }
 };
 
