@@ -23,7 +23,9 @@ class DashboardController extends Controller
         $income = Income::where('user_id', $userId)->whereBetween('date', [$from, $to])->sum('amount');
         $expense = Expense::where('user_id', $userId)->whereBetween('date', [$from, $to])->sum('amount');
 
-        $bankAccounts = BankAccount::where('user_id', $userId)->get(['id', 'name', 'type', 'current_balance']);
+        $bankAccounts = BankAccount::where('user_id', $userId)
+            ->where('status', 'active')
+            ->get(['id', 'name', 'account_type', 'currency', 'current_balance']);
 
         $contactsReceivable = Contact::where('user_id', $userId)
             ->where('opening_balance_type', 'receivable')

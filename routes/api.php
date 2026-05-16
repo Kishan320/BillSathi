@@ -45,6 +45,7 @@ Route::middleware(['auth:sanctum', HandlePrecognitiveRequests::class])->group(fu
     // All modules
     Route::apiResource('contacts', ContactController::class);
     Route::apiResource('vendors', VendorController::class);
+    Route::post('bank-accounts/{bankAccount}/close', [BankAccountController::class, 'close']);
     Route::apiResource('bank-accounts', BankAccountController::class);
     Route::apiResource('expenses', ExpenseController::class);
     Route::apiResource('incomes', IncomeController::class);
