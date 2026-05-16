@@ -23,7 +23,7 @@ class IncomeRequest extends FormRequest
             'amount' => [...$required, 'numeric', 'min:0'],
             'category' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
-            'status' => ['in:received,pending,overdue'],
+            'status' => [$this->isMethod('post') ? 'nullable' : 'sometimes', 'in:received,pending,overdue'],
         ];
     }
 }
