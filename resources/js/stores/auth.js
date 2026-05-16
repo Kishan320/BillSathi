@@ -34,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('token', access_token);
       localStorage.setItem('refreshToken', refresh_token);
       localStorage.setItem('user', JSON.stringify(userData));
+      if (userData.lang) localStorage.setItem('lang', userData.lang);
       
       return response.data;
     } catch (err) {
@@ -152,6 +153,13 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  const updateLang = async (lang) => {
+    await api.put('/auth/lang', { lang });
+    user.value = { ...user.value, lang };
+    localStorage.setItem('user', JSON.stringify(user.value));
+    localStorage.setItem('lang', lang);
+  };
+
   const clearAuth = () => {
     user.value = null;
     token.value = null;
@@ -178,6 +186,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedUser && token.value) {
       try {
         user.value = JSON.parse(savedUser);
+        if (user.value?.lang) localStorage.setItem('lang', user.value.lang);
       } catch (err) {
         console.error('Failed to parse saved user data:', err);
         clearAuth();
@@ -206,6 +215,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAccessToken,
     fetchUser,
     updateProfile,
+    updateLang,
     clearAuth,
     hasPermission,
     hasRole,

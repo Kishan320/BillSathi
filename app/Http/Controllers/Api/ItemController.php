@@ -6,6 +6,7 @@ use App\Http\Requests\Api\ItemRequest;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Yajra\DataTables\Facades\DataTables;
 
 class ItemController extends Controller
 {
@@ -16,6 +17,18 @@ class ItemController extends Controller
         if ($request->category) $query->where('category', $request->category);
         if ($request->item_type) $query->where('item_type', $request->item_type);
         return response()->json($query->orderBy('name')->paginate(20));
+    }
+
+    public function datatable(Request $request)
+    {
+        $query = Item::where('user_id', $request->user()->id)
+            ->select(['id','name','item_type','sku','category','unit','sale_price','opening_stock_qty','short_description']);
+
+        if ($request->item_type) {
+            $query->where('item_type', $request->item_type);
+        }
+
+        return DataTables::of($query)->make(true);
     }
 
     public function store(ItemRequest $request)

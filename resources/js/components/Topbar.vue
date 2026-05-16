@@ -48,6 +48,35 @@
         <span>AI Active</span>
       </div>
 
+      <!-- Language Switcher -->
+      <div class="relative" ref="langDropdownRef">
+        <button
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-border hover:bg-muted transition-colors"
+          @click="langOpen = !langOpen"
+          aria-label="Switch language"
+        >
+          <span>{{ currentLang.flag }}</span>
+          <span class="hidden sm:inline text-foreground">{{ currentLang.label }}</span>
+          <AppIcon name="chevron-down" :size="10" class="text-muted-foreground" />
+        </button>
+
+        <div
+          v-if="langOpen"
+          class="absolute right-0 top-full mt-2 w-36 bg-card border border-border rounded-xl shadow-card-lg z-50 overflow-hidden"
+        >
+          <button
+            v-for="lang in languages"
+            :key="lang.code"
+            class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
+            :class="locale === lang.code ? 'text-primary font-semibold' : 'text-foreground'"
+            @click="switchLang(lang.code)"
+          >
+            <span>{{ lang.flag }}</span>
+            <span>{{ lang.label }}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Help -->
       <button
         class="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -147,6 +176,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationsStore } from '@/stores/notifications';
 import AppLogo from '@/components/ui/AppLogo.vue';
@@ -156,9 +186,31 @@ const emit = defineEmits(['mobileMenuOpen']);
 
 const authStore = useAuthStore();
 const notificationsStore = useNotificationsStore();
+const { locale } = useI18n();
 
 const searchFocused = ref(false);
 const searchQuery = ref('');
+const langOpen = ref(false);
+const langDropdownRef = ref(null);
+
+const languages = [
+  { code: 'en', label: 'English', flag: '🇬🇧' },
+  { code: 'hi', label: 'हिंदी', flag: '🇮🇳' },
+  { code: 'gu', label: 'ગુજરાતી', flag: '🇮🇳' },
+];
+
+const currentLang = computed(() => languages.find(l => l.code === locale.value) || languages[0]);
+
+const switchLang = async (code) => {
+  locale.value = code;
+  langOpen.value = false;
+  try {
+    await authStore.updateLang(code);
+  } catch {
+    // silently ignore if not authenticated
+    localStorage.setItem('lang', code);
+  }
+};
 
 const userInitials = computed(() => {
   const name = authStore.currentUser?.name || 'Marcus Webb';
@@ -172,47 +224,28 @@ const userInitials = computed(() => {
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
-    // Implement search functionality
     console.log('Searching for:', searchQuery.value);
   }
 };
 
-const toggleNotifications = () => {
-  notificationsStore.toggleNotifications();
-};
-
-const markAsRead = (notificationId) => {
-  notificationsStore.markAsRead(notificationId);
-};
-
+const toggleNotifications = () => notificationsStore.toggleNotifications();
+const markAsRead = (id) => notificationsStore.markAsRead(id);
 const viewAllNotifications = () => {
-  // Navigate to notifications page
   console.log('Navigate to all notifications');
   notificationsStore.closeNotifications();
 };
-
-const toggleUserMenu = () => {
-  // Implement user menu
-  console.log('Toggle user menu');
-};
-
-const openHelp = () => {
-  // Implement help functionality
-  console.log('Open help');
-};
+const toggleUserMenu = () => console.log('Toggle user menu');
+const openHelp = () => console.log('Open help');
 
 const getStatusClass = (type) => {
-  const statusClasses = {
-    warning: 'bg-warning',
-    danger: 'bg-danger',
-    success: 'bg-positive',
-    info: 'bg-info'
-  };
-  return statusClasses[type] || 'bg-info';
+  const map = { warning: 'bg-warning', danger: 'bg-danger', success: 'bg-positive', info: 'bg-info' };
+  return map[type] || 'bg-info';
 };
 
-// Close notifications when clicking outside
 const handleClickOutside = (event) => {
+  if (langDropdownRef.value && !langDropdownRef.value.contains(event.target)) {
+    langOpen.value = false;
+  }
   if (!event.target.closest('.relative')) {
     notificationsStore.closeNotifications();
   }

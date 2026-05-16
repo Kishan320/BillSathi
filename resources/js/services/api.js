@@ -213,6 +213,7 @@ export const apiService = {
   },
 
   contacts: crudResource('/contacts'),
+  vendors: crudResource('/vendors'),
   bankAccounts: crudResource('/bank-accounts'),
   expenses: crudResource('/expenses'),
   incomes: crudResource('/incomes'),
@@ -224,6 +225,7 @@ export const apiService = {
     generateSku: () => api.get('/items/generate-sku'),
   },
   purchases: crudResource('/purchases'),
+  warehouses: crudResource('/warehouses'),
   sales: crudResource('/sales'),
   settlements: crudResource('/settlements'),
   journalVouchers: crudResource('/journal-vouchers'),

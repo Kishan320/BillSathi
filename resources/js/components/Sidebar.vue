@@ -40,22 +40,54 @@
         <AppIcon name="chevron-right" :size="14" />
       </button>
 
-      <!-- Nav -->
       <nav class="flex-1 min-h-0 overflow-y-auto scrollbar-thin py-2">
         <ul>
           <li v-for="item in navItems" :key="item.id">
-            <router-link
-              :to="item.href"
-              :class="[
-                'flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
-                isActive(item.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground',
-                collapsed ? 'justify-center' : ''
-              ]"
-              :title="collapsed ? item.label : undefined"
-            >
-              <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
-              <span v-if="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
-            </router-link>
+            <!-- Group with children -->
+            <template v-if="item.group">
+              <button
+                @click="toggleGroup(item.id)"
+                :class="[
+                  'w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                  item.children.some(c => isActive(c.href)) ? 'nav-item-active font-semibold' : 'text-muted-foreground',
+                  collapsed ? 'justify-center' : ''
+                ]"
+                :style="collapsed ? '' : 'width: calc(100% - 1rem)'"
+              >
+                <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
+                <span v-if="!collapsed" class="flex-1 truncate text-left">{{ item.label }}</span>
+                <AppIcon v-if="!collapsed" :name="expandedGroups.includes(item.id) ? 'chevron-down' : 'chevron-right'" :size="12" class="flex-shrink-0" />
+              </button>
+              <ul v-if="!collapsed && expandedGroups.includes(item.id)" class="ml-4 mt-0.5 space-y-0.5">
+                <li v-for="child in item.children" :key="child.id">
+                  <router-link
+                    :to="child.href"
+                    :class="[
+                      'flex items-center gap-3 px-3 py-1.5 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                      isActive(child.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground'
+                    ]"
+                  >
+                    <AppIcon :name="child.icon" :size="14" class="flex-shrink-0" />
+                    <span class="flex-1 truncate">{{ child.label }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </template>
+            <!-- Regular item -->
+            <template v-else>
+              <router-link
+                :to="item.href"
+                :class="[
+                  'flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                  isActive(item.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground',
+                  collapsed ? 'justify-center' : ''
+                ]"
+                :title="collapsed ? item.label : undefined"
+              >
+                <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
+                <span v-if="!collapsed" class="flex-1 truncate">{{ item.label }}</span>
+              </router-link>
+            </template>
           </li>
         </ul>
       </nav>
@@ -111,17 +143,48 @@
       <nav class="flex-1 min-h-0 overflow-y-auto scrollbar-thin py-2">
         <ul>
           <li v-for="item in navItems" :key="`mob-${item.id}`">
-            <router-link
-              :to="item.href"
-              @click="$emit('mobileClose')"
-              :class="[
-                'flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
-                isActive(item.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground'
-              ]"
-            >
-              <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
-              <span class="flex-1">{{ item.label }}</span>
-            </router-link>
+            <template v-if="item.group">
+              <button
+                @click="toggleGroup(item.id)"
+                :class="[
+                  'w-full flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                  item.children.some(c => isActive(c.href)) ? 'nav-item-active font-semibold' : 'text-muted-foreground'
+                ]"
+                style="width: calc(100% - 1rem)"
+              >
+                <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
+                <span class="flex-1 truncate text-left">{{ item.label }}</span>
+                <AppIcon :name="expandedGroups.includes(item.id) ? 'chevron-down' : 'chevron-right'" :size="12" class="flex-shrink-0" />
+              </button>
+              <ul v-if="expandedGroups.includes(item.id)" class="ml-4 mt-0.5 space-y-0.5">
+                <li v-for="child in item.children" :key="`mob-${child.id}`">
+                  <router-link
+                    :to="child.href"
+                    @click="$emit('mobileClose')"
+                    :class="[
+                      'flex items-center gap-3 px-3 py-1.5 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                      isActive(child.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground'
+                    ]"
+                  >
+                    <AppIcon :name="child.icon" :size="14" class="flex-shrink-0" />
+                    <span class="flex-1">{{ child.label }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </template>
+            <template v-else>
+              <router-link
+                :to="item.href"
+                @click="$emit('mobileClose')"
+                :class="[
+                  'flex items-center gap-3 px-3 py-2 mx-2 rounded-lg text-sm font-medium transition-all nav-item-hover',
+                  isActive(item.href) ? 'nav-item-active font-semibold' : 'text-muted-foreground'
+                ]"
+              >
+                <AppIcon :name="item.icon" :size="16" class="flex-shrink-0" />
+                <span class="flex-1">{{ item.label }}</span>
+              </router-link>
+            </template>
           </li>
         </ul>
       </nav>
@@ -170,7 +233,7 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
-const expandedGroups = ref([]);
+const expandedGroups = ref(['purchases']);
 
 const toggleGroup = (group) => {
   const index = expandedGroups.value.indexOf(group);
@@ -184,6 +247,7 @@ const navItems = [
   { id: 'dashboard',        label: 'Dashboard',        icon: 'layout-dashboard',  href: '/dashboard' },
   { id: 'reports',          label: 'Reports',           icon: 'bar-chart-3',       href: '/reports' },
   { id: 'contacts',         label: 'Contacts',          icon: 'phone',             href: '/contacts' },
+  { id: 'vendors',          label: 'Vendors',           icon: 'truck',             href: '/vendors' },
   { id: 'bank-accounts',    label: 'Bank Accounts',     icon: 'landmark',          href: '/bank-accounts' },
   { id: 'expenses',         label: 'Expenses',          icon: 'receipt',           href: '/expenses' },
   { id: 'incomes',          label: 'Incomes',           icon: 'trending-up',       href: '/incomes' },
@@ -191,7 +255,13 @@ const navItems = [
   { id: 'bank-transfers',   label: 'Bank Transfers',    icon: 'arrow-left-right',  href: '/bank-transfers' },
   { id: 'loans',            label: 'Loans & Advances',  icon: 'hand-coins',        href: '/loans' },
   { id: 'items',            label: 'Items',             icon: 'shopping-basket',   href: '/items' },
-  { id: 'purchases',        label: 'Purchases',         icon: 'shopping-cart',     href: '/purchases' },
+  {
+    id: 'purchases-group', label: 'Purchases', icon: 'shopping-cart', group: true,
+    children: [
+      { id: 'purchases',   label: 'Purchase Invoices', icon: 'file-text',   href: '/purchases' },
+      { id: 'warehouses',  label: 'Warehouses',        icon: 'warehouse',   href: '/warehouses' },
+    ]
+  },
   { id: 'sales',            label: 'Sales',             icon: 'tag',               href: '/sales' },
   { id: 'settlements',      label: 'Settlements',       icon: 'handshake',         href: '/settlements' },
   { id: 'journal-vouchers', label: 'Journal Vouchers',  icon: 'notebook-pen',      href: '/journal-vouchers' },
@@ -227,7 +297,7 @@ const isActive = (href) => {
   if (href === '/dashboard') {
     return route.path === '/dashboard' || route.path === '/';
   }
-  return route.path === href;
+  return route.path === href || route.path.startsWith(href + '/');
 };
 
 const handleLogout = async () => {

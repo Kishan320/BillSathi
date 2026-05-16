@@ -20,6 +20,7 @@ const MinimalLayout = () => import('@/layouts/MinimalLayout.vue');
 const Dashboard      = () => import('@/pages/Dashboard.vue');
 const Reports        = () => import('@/pages/Reports.vue');
 const Contacts       = () => import('@/pages/Contacts.vue');
+const Vendors        = () => import('@/pages/Vendors.vue');
 const BankAccounts   = () => import('@/pages/BankAccounts.vue');
 const Expenses       = () => import('@/pages/Expenses.vue');
 const Incomes        = () => import('@/pages/Incomes.vue');
@@ -28,6 +29,9 @@ const BankTransfers  = () => import('@/pages/BankTransfers.vue');
 const Loans          = () => import('@/pages/Loans.vue');
 const Items          = () => import('@/pages/Items.vue');
 const Purchases      = () => import('@/pages/Purchases.vue');
+const CreatePurchase  = () => import('@/pages/CreatePurchase.vue');
+const EditPurchase    = () => import('@/pages/EditPurchase.vue');
+const Warehouses     = () => import('@/pages/Warehouses.vue');
 const Sales          = () => import('@/pages/Sales.vue');
 const Settlements    = () => import('@/pages/Settlements.vue');
 const JournalVouchers = () => import('@/pages/JournalVouchers.vue');
@@ -55,6 +59,7 @@ const routes = [
   appRoute('/dashboard',        'Dashboard',       'Dashboard',        Dashboard),
   appRoute('/reports',          'Reports',         'Reports',          Reports),
   appRoute('/contacts',         'Contacts',        'Contacts',         Contacts),
+  appRoute('/vendors',          'Vendors',         'Vendors',          Vendors),
   appRoute('/bank-accounts',    'BankAccounts',    'Bank Accounts',    BankAccounts),
   appRoute('/expenses',         'Expenses',        'Expenses',         Expenses),
   appRoute('/incomes',          'Incomes',         'Incomes',          Incomes),
@@ -63,6 +68,9 @@ const routes = [
   appRoute('/loans',            'Loans',           'Loans & Advances', Loans),
   appRoute('/items',            'Items',           'Items',            Items),
   appRoute('/purchases',        'Purchases',       'Purchases',        Purchases),
+  appRoute('/purchases/create', 'CreatePurchase',  'Create Purchase',  CreatePurchase),
+  appRoute('/purchases/:id/edit', 'EditPurchase',  'Edit Purchase',    EditPurchase),
+  appRoute('/warehouses',       'Warehouses',      'Warehouses',       Warehouses),
   appRoute('/sales',            'Sales',           'Sales',            Sales),
   appRoute('/settlements',      'Settlements',     'Settlements',      Settlements),
   appRoute('/journal-vouchers', 'JournalVouchers', 'Journal Vouchers', JournalVouchers),

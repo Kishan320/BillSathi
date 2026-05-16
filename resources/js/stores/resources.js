@@ -176,6 +176,71 @@ export const useResourcesStore = defineStore('resources', () => {
     });
   };
 
+  // ── Warehouses ────────────────────────────────────────────────────────────
+  const warehouses = ref([]);
+  let warehousesRequest = null;
+
+  const fetchWarehouses = async ({ force = false } = {}) => {
+    if (warehouses.value.length && !force) return warehouses.value;
+    if (warehousesRequest) return warehousesRequest;
+    warehousesRequest = api.get('/warehouses', { params: { per_page: 100, status: 1 } })
+      .then((r) => {
+        const d = r.data;
+        warehouses.value = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
+        return warehouses.value;
+      })
+      .finally(() => { warehousesRequest = null; });
+    return warehousesRequest;
+  };
+
+  // ── Purchases ─────────────────────────────────────────────────────────────
+  const purchasesList = ref([]);
+  const purchasesMeta = ref({ current_page: 1, last_page: 1, from: 0, to: 0, total: 0 });
+
+  const fetchPurchases = async (params = {}) => {
+    const { data } = await api.get('/purchases', { params });
+    purchasesList.value = data.data || data;
+    const total = data.recordsFiltered || data.total || purchasesList.value.length;
+    const page = params.page || Math.floor((params.start || 0) / (params.length || 10)) + 1;
+    const perPage = params.length || 10;
+    purchasesMeta.value = {
+      current_page: page,
+      last_page: Math.max(1, Math.ceil(total / perPage)),
+      from: total ? (page - 1) * perPage + 1 : 0,
+      to: Math.min(page * perPage, total),
+      total,
+    };
+    return purchasesList.value;
+  };
+
+  const upsertPurchase = (purchase) => {
+    const index = purchasesList.value.findIndex((p) => p.id === purchase.id);
+    if (index !== -1) purchasesList.value[index] = purchase;
+    else purchasesList.value.unshift(purchase);
+  };
+
+  const createPurchase = async (payload) => {
+    const { data } = await api.post('/purchases', payload);
+    upsertPurchase(data);
+    return data;
+  };
+
+  const updatePurchase = async (id, payload) => {
+    const { data } = await api.put(`/purchases/${id}`, payload);
+    upsertPurchase(data);
+    return data;
+  };
+
+  const deletePurchase = async (id) => {
+    await api.delete(`/purchases/${id}`);
+    purchasesList.value = purchasesList.value.filter((p) => p.id !== id);
+  };
+
+  const getPurchaseById = async (id) => {
+    const { data } = await api.get(`/purchases/${id}`);
+    return data;
+  };
+
   const clearResources = () => {
     systemSettings.value = null;
     systemSettingsRequest = null;
@@ -183,6 +248,9 @@ export const useResourcesStore = defineStore('resources', () => {
     Object.keys(itemPayloads).forEach((key) => delete itemPayloads[key]);
     Object.keys(itemLoading).forEach((key) => delete itemLoading[key]);
     itemRequests.clear();
+    warehouses.value = [];
+    warehousesRequest = null;
+    purchasesList.value = [];
   };
 
   return {
@@ -199,6 +267,15 @@ export const useResourcesStore = defineStore('resources', () => {
     createItem,
     updateItem,
     deleteItem,
+    warehouses,
+    fetchWarehouses,
+    purchasesList,
+    purchasesMeta,
+    fetchPurchases,
+    createPurchase,
+    updatePurchase,
+    deletePurchase,
+    getPurchaseById,
     clearResources,
   };
 });

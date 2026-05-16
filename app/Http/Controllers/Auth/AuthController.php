@@ -36,6 +36,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'lang' => $user->lang ?? 'en',
             ],
         ]);
     }
@@ -83,6 +84,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'lang' => $user->lang ?? 'en',
             ],
         ], 201);
     }
@@ -109,6 +111,13 @@ class AuthController extends Controller
         $user->update(['password' => Hash::make($request->password)]);
 
         return response()->json(['message' => 'Password changed successfully']);
+    }
+
+    public function updateLang(Request $request)
+    {
+        $request->validate(['lang' => 'required|string|in:en,hi,gu']);
+        $request->user()->update(['lang' => $request->lang]);
+        return response()->json(['lang' => $request->lang]);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request)

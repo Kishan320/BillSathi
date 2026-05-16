@@ -33,6 +33,7 @@
 
 <script setup>
 import { onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useThemeStore } from '@/stores/theme';
 import { useAuthStore } from '@/stores/auth';
 import Sidebar from '@/components/Sidebar.vue';
@@ -40,9 +41,12 @@ import Topbar from '@/components/Topbar.vue';
 
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
+const { locale } = useI18n();
 
 onMounted(() => {
   themeStore.initializeTheme();
   authStore.initializeAuth();
+  const lang = authStore.currentUser?.lang || localStorage.getItem('lang') || 'en';
+  locale.value = lang;
 });
 </script>
