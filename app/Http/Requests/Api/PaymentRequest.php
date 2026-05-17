@@ -21,7 +21,7 @@ class PaymentRequest extends FormRequest
             'reference' => ['nullable', 'string', 'max:100'],
             'date' => [...$required, 'date'],
             'amount' => [...$required, 'numeric', 'min:0'],
-            'type' => ['in:sent,received'],
+            'type' => [$this->isMethod('post') ? 'nullable' : 'sometimes', 'in:sent,received'],
             'method' => ['nullable', 'string', 'max:50'],
             'notes' => ['nullable', 'string'],
         ];

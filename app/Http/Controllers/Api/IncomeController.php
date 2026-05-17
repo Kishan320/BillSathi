@@ -5,22 +5,36 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\IncomeRequest;
 use App\Models\Income;
 use App\Services\BankLedgerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class IncomeController extends Controller
 {
-    public function __construct(private BankLedgerService $ledger) {}
-
-    public function index(Request $request)
+    public function __construct(private BankLedgerService $ledger)
     {
-        $query = Income::with(['contact', 'bankAccount'])->where('user_id', $request->user()->id);
-        if ($request->search) $query->where('reference', 'like', "%{$request->search}%");
-        if ($request->status) $query->where('status', $request->status);
-        return response()->json($query->orderByDesc('date')->paginate(20));
     }
 
-    public function store(IncomeRequest $request)
+    public function index(Request $request): JsonResponse
+    {
+        $query = Income::with(['contact', 'bankAccount'])->where('user_id', $request->user()->id);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where('reference', 'like', "%{$search}%");
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        return response()->json($query->orderByDesc('date')->paginate($perPage));
+    }
+
+    public function store(IncomeRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
         $data = $request->validated();
@@ -43,19 +57,19 @@ class IncomeController extends Controller
                 );
             }
 
-            return $income;
+            return $income->refresh();
         });
 
         return response()->json($income, 201);
     }
 
-    public function show(Request $request, Income $income)
+    public function show(Request $request, Income $income): JsonResponse
     {
         abort_if($income->user_id !== $request->user()->id, 403);
         return response()->json($income->load(['contact', 'bankAccount']));
     }
 
-    public function update(IncomeRequest $request, Income $income)
+    public function update(IncomeRequest $request, Income $income): JsonResponse
     {
         abort_if($income->user_id !== $request->user()->id, 403);
         $userId = $request->user()->id;
@@ -81,14 +95,16 @@ class IncomeController extends Controller
         return response()->json($income->refresh());
     }
 
-    public function destroy(Request $request, Income $income)
+    public function destroy(Request $request, Income $income): JsonResponse
     {
         abort_if($income->user_id !== $request->user()->id, 403);
         $userId = $request->user()->id;
+
         DB::transaction(function () use ($userId, $income) {
             $this->ledger->upsertForSource($userId, 'deposit', null, 'credit', 0, now()->toDateString(), $income);
             $income->delete();
         });
+
         return response()->json(['message' => 'Deleted']);
     }
 }

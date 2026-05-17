@@ -8,12 +8,13 @@ use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Sale;
 use App\Models\Purchase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
         $period = $request->period ?? 'this_month';
@@ -45,27 +46,27 @@ class DashboardController extends Controller
         $totalExpense = Expense::where('user_id', $userId)->sum('amount');
 
         return response()->json([
-            'income'               => $income,
-            'expense'              => $expense,
-            'profit'               => $income - $expense,
-            'bank_accounts'        => $bankAccounts,
-            'contacts_receivable'  => $contactsReceivable,
-            'contacts_payable'     => $contactsPayable,
-            'total_income'         => $totalIncome,
-            'total_expense'        => $totalExpense,
-            'net_profit'           => $totalIncome - $totalExpense,
-            'period'               => $period,
+            'income' => $income,
+            'expense' => $expense,
+            'profit' => $income - $expense,
+            'bank_accounts' => $bankAccounts,
+            'contacts_receivable' => $contactsReceivable,
+            'contacts_payable' => $contactsPayable,
+            'total_income' => $totalIncome,
+            'total_expense' => $totalExpense,
+            'net_profit' => $totalIncome - $totalExpense,
+            'period' => $period,
         ]);
     }
 
     private function getPeriodDates(string $period): array
     {
         return match ($period) {
-            'this_week'      => [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()],
-            'last_month'     => [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()],
-            'this_quarter'   => [Carbon::now()->startOfQuarter(), Carbon::now()->endOfQuarter()],
-            'this_year'      => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
-            default          => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
+            'this_week' => [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()],
+            'last_month' => [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()],
+            'this_quarter' => [Carbon::now()->startOfQuarter(), Carbon::now()->endOfQuarter()],
+            'this_year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
+            default => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
         };
     }
 }

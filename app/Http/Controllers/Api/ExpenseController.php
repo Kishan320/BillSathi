@@ -5,22 +5,36 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ExpenseRequest;
 use App\Models\Expense;
 use App\Services\BankLedgerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
-    public function __construct(private BankLedgerService $ledger) {}
-
-    public function index(Request $request)
+    public function __construct(private BankLedgerService $ledger)
     {
-        $query = Expense::with(['contact', 'bankAccount'])->where('user_id', $request->user()->id);
-        if ($request->search) $query->where('reference', 'like', "%{$request->search}%");
-        if ($request->status) $query->where('status', $request->status);
-        return response()->json($query->orderByDesc('date')->paginate(20));
     }
 
-    public function store(ExpenseRequest $request)
+    public function index(Request $request): JsonResponse
+    {
+        $query = Expense::with(['contact', 'bankAccount'])->where('user_id', $request->user()->id);
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->search);
+            $query->where('reference', 'like', "%{$search}%");
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
+        return response()->json($query->orderByDesc('date')->paginate($perPage));
+    }
+
+    public function store(ExpenseRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
         $data = $request->validated();
@@ -43,19 +57,19 @@ class ExpenseController extends Controller
                 );
             }
 
-            return $expense;
+            return $expense->refresh();
         });
 
         return response()->json($expense, 201);
     }
 
-    public function show(Request $request, Expense $expense)
+    public function show(Request $request, Expense $expense): JsonResponse
     {
         abort_if($expense->user_id !== $request->user()->id, 403);
         return response()->json($expense->load(['contact', 'bankAccount']));
     }
 
-    public function update(ExpenseRequest $request, Expense $expense)
+    public function update(ExpenseRequest $request, Expense $expense): JsonResponse
     {
         abort_if($expense->user_id !== $request->user()->id, 403);
         $userId = $request->user()->id;
@@ -81,7 +95,7 @@ class ExpenseController extends Controller
         return response()->json($expense->refresh());
     }
 
-    public function destroy(Request $request, Expense $expense)
+    public function destroy(Request $request, Expense $expense): JsonResponse
     {
         abort_if($expense->user_id !== $request->user()->id, 403);
         $userId = $request->user()->id;

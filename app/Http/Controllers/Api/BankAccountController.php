@@ -12,7 +12,9 @@ use Illuminate\Http\Request;
 
 class BankAccountController extends Controller
 {
-    public function __construct(private BankLedgerService $ledger) {}
+    public function __construct(private BankLedgerService $ledger)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -223,8 +225,10 @@ class BankAccountController extends Controller
         foreach ($fields as $field) {
             if (array_key_exists($field, $data)) {
                 $value = $data[$field];
-                if ($value === null || $value === '') unset($metadata[$field]);
-                else $metadata[$field] = $value;
+                if ($value === null || $value === '')
+                    unset($metadata[$field]);
+                else
+                    $metadata[$field] = $value;
             }
         }
 

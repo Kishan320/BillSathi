@@ -5,23 +5,29 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\BankTransferRequest;
 use App\Models\BankTransfer;
 use App\Services\BankLedgerService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class BankTransferController extends Controller
 {
-    public function __construct(private BankLedgerService $ledger) {}
-
-    public function index(Request $request)
+    public function __construct(private BankLedgerService $ledger)
     {
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = (int) $request->get('per_page', 20);
+        $perPage = max(1, min(100, $perPage));
+
         return response()->json(
             BankTransfer::with(['fromAccount', 'toAccount'])
                 ->where('user_id', $request->user()->id)
-                ->orderByDesc('date')->paginate(20)
+                ->orderByDesc('date')->paginate($perPage)
         );
     }
 
-    public function store(BankTransferRequest $request)
+    public function store(BankTransferRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
         $data = $request->validated();
@@ -36,19 +42,19 @@ class BankTransferController extends Controller
             $this->ledger->upsertForSource($userId, 'transfer', $transfer->from_account_id, 'debit', $amount, $date, $transfer, 'from');
             $this->ledger->upsertForSource($userId, 'transfer', $transfer->to_account_id, 'credit', $amount, $date, $transfer, 'to');
 
-            return $transfer;
+            return $transfer->refresh();
         });
 
         return response()->json($transfer->load(['fromAccount', 'toAccount']), 201);
     }
 
-    public function show(Request $request, BankTransfer $bankTransfer)
+    public function show(Request $request, BankTransfer $bankTransfer): JsonResponse
     {
         abort_if($bankTransfer->user_id !== $request->user()->id, 403);
         return response()->json($bankTransfer->load(['fromAccount', 'toAccount']));
     }
 
-    public function update(BankTransferRequest $request, BankTransfer $bankTransfer)
+    public function update(BankTransferRequest $request, BankTransfer $bankTransfer): JsonResponse
     {
         abort_if($bankTransfer->user_id !== $request->user()->id, 403);
         $userId = $request->user()->id;
@@ -68,7 +74,7 @@ class BankTransferController extends Controller
         return response()->json($bankTransfer->refresh()->load(['fromAccount', 'toAccount']));
     }
 
-    public function destroy(Request $request, BankTransfer $bankTransfer)
+    public function destroy(Request $request, BankTransfer $bankTransfer): JsonResponse
     {
         abort_if($bankTransfer->user_id !== $request->user()->id, 403);
 
